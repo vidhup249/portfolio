@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react"
 import { motion, useScroll, useTransform } from "motion/react"
-import Prism from "@/components/shaders/Prism"
+import LiquidChrome from "@/components/shaders/LiquidChrome"
 import TechText from "@/components/ui/TechText"
 import { site } from "@/data/site"
 
 const ease = [0.2, 0.8, 0.2, 1] as const
+// Module-level so the shader is not rebuilt on every render.
+const CHROME: [number, number, number] = [0.07, 0.07, 0.07]
 
 
 // Each letter rises out of a mask.
@@ -130,13 +132,13 @@ export default function Hero() {
   return (
     <section id="top" ref={ref} className="relative h-svh min-h-[640px] overflow-hidden">
       <motion.div
-        // Prism lives in the upper right so its bright base never sits behind the wordmark.
-        className="absolute -top-[8%] -right-[25%] h-[65%] w-[150%] [mask-image:radial-gradient(ellipse_at_center,#000_35%,transparent_70%)] md:-top-[16%] md:-right-[6%] md:h-[95%] md:w-[72%]"
+        // Chrome fills the top and fades out before the wordmark so the type stays readable.
+        className="absolute inset-0 [mask-image:linear-gradient(to_bottom,#000_25%,transparent_80%)]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 2.5, delay: 0.4 }}
       >
-        <Prism animationType="rotate" timeScale={0.4} scale={2.6} glow={1} bloom={1} noise={0} suspendWhenOffscreen />
+        <LiquidChrome baseColor={CHROME} speed={0.18} amplitude={0.3} frequencyX={3} frequencyY={3} />
       </motion.div>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-black" />
 
