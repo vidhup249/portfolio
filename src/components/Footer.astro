@@ -1,0 +1,64 @@
+---
+import { site } from "@/data/site";
+const year = new Date().getFullYear();
+---
+
+<footer class="relative overflow-hidden pt-16">
+	<div aria-hidden="true" class="absolute inset-x-0 top-0 h-[28rem]">
+		<div class="glow top-10 left-[10%] size-[22rem] bg-[#22d3ee]/40"></div>
+		<div class="glow top-24 right-[12%] size-[26rem] bg-[#a855f7]/40 [animation-delay:-9s]"></div>
+	</div>
+	<div class="relative px-5 md:px-10">
+	<div class="glass glass-thick mx-auto grid max-w-[1600px] gap-10 rounded-[2rem] p-8 md:grid-cols-3 md:p-12">
+		<div>
+			<p class="font-mono text-xs tracking-widest text-white/40 uppercase">Socials</p>
+			<ul class="mt-4 space-y-2">
+				{
+					site.socials.map((s) => (
+						<li>
+							<a href={s.href} target="_blank" rel="noopener" class="group inline-flex items-center gap-2 text-xl text-white/70 transition-colors hover:text-white">
+								{s.label}
+								<span class="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1">↗</span>
+							</a>
+						</li>
+					))
+				}
+			</ul>
+		</div>
+		<div>
+			<p class="font-mono text-xs tracking-widest text-white/40 uppercase">Menu</p>
+			<ul class="mt-4 space-y-2">
+				{site.nav.map((l) => <li><a href={l.href} class="text-xl text-white/70 transition-colors hover:text-white">{l.label}</a></li>)}
+			</ul>
+		</div>
+		<div class="md:text-right">
+			<p class="font-mono text-xs tracking-widest text-white/40 uppercase">Based in</p>
+			<p class="mt-4 text-xl text-white/70">{site.location}</p>
+			<p class="mt-1 text-white/40 tabular-nums">Local time <span id="local-time" data-tz={site.timezone}>--:--</span></p>
+			<a href="#top" class="mt-6 inline-block font-mono text-xs tracking-widest text-white/40 uppercase hover:text-white">Back to top ↑</a>
+		</div>
+	</div>
+	</div>
+
+	<p
+		class="mt-20 text-center text-[17vw] leading-[0.9] font-semibold tracking-[-0.055em] whitespace-nowrap select-none bg-gradient-to-b from-white/30 to-white/0 bg-clip-text text-transparent"
+		aria-hidden="true"
+	>
+		{site.wordmark.main}<span class="font-serif font-normal tracking-[-0.03em] italic">{site.wordmark.accent}</span>
+	</p>
+	<div class="mx-auto flex max-w-[1600px] flex-wrap justify-between gap-x-6 gap-y-2 border-t border-white/10 px-5 py-6 font-mono text-xs text-white/40 md:px-10">
+		<span>© {year} {site.brand}</span>
+		<span>Built with Astro · Shaders · Love</span>
+	</div>
+</footer>
+
+<script>
+	// Live local clock for the "Based in" column.
+	const el = document.getElementById("local-time");
+	if (el) {
+		const fmt = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: el.dataset.tz });
+		const tick = () => (el.textContent = fmt.format(new Date()));
+		tick();
+		setInterval(tick, 15000);
+	}
+</script>

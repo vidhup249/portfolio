@@ -1,23 +1,106 @@
+---
+import "@/styles/global.css";
+import { site } from "@/data/site";
+import ClickEffects from "@/components/ClickEffects";
+import PageLoader from "@/components/PageLoader.astro";
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const {
+	title = `${site.brand} — ${site.role}`,
+	description = site.tagline,
+} = Astro.props;
+---
+
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content="#000000" />
+		<meta name="description" content={description} />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<title>{title}</title>
 	</head>
 	<body>
+		<PageLoader />
 		<slot />
+		<div class="grain" aria-hidden="true"></div>
+		<div id="cursor" aria-hidden="true"></div>
+		<ClickEffects client:idle />
+
+		<script>
+			import Lenis from "lenis";
+
+			// Dev only: console warnings for cut-off glyphs. Stripped from production builds.
+			if (import.meta.env.DEV) import("@/scripts/clip-guard");
+
+			const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+			if (!reduced) {
+				const lenis = new Lenis({ lerp: 0.085, wheelMultiplier: 1, anchors: { offset: 0 } });
+				const raf = (t: number) => {
+					lenis.raf(t);
+					requestAnimationFrame(raf);
+				};
+				requestAnimationFrame(raf);
+			}
+
+			// Cursor: blend-difference dot that grows over interactive elements.
+			// Glass sheen: light follows the pointer across any .glass panel under it.
+			addEventListener("pointermove", (e) => {
+				const g = (e.target as Element).closest?.(".glass") as HTMLElement | null;
+				if (!g) return;
+				const r = g.getBoundingClientRect();
+				g.style.setProperty("--mx", `${e.clientX - r.left}px`);
+				g.style.setProperty("--my", `${e.clientY - r.top}px`);
+			}, { passive: true });
+
+			const cursor = document.getElementById("cursor")!;
+			if (window.matchMedia("(pointer: fine)").matches && !reduced) {
+				let x = innerWidth / 2, y = innerHeight / 2, cx = x, cy = y;
+				addEventListener("pointermove", (e) => {
+					x = e.clientX;
+					y = e.clientY;
+					cursor.classList.add("on");
+					const hit = (e.target as Element).closest("a, button, [data-cursor]");
+					cursor.classList.toggle("big", !!hit);
+				});
+				document.addEventListener("pointerleave", () => cursor.classList.remove("on"));
+				const tick = () => {
+					cx += (x - cx) * 0.2;
+					cy += (y - cy) * 0.2;
+					cursor.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
+					requestAnimationFrame(tick);
+				};
+				tick();
+			} else {
+				cursor.remove();
+			}
+		</script>
+
+		<style is:global>
+			#cursor {
+				position: fixed;
+				top: 0;
+				left: 0;
+				z-index: 101;
+				width: 12px;
+				height: 12px;
+				border-radius: 9999px;
+				background: #fff;
+				mix-blend-mode: difference;
+				pointer-events: none;
+				opacity: 0;
+				transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s;
+			}
+			#cursor.on { opacity: 1; }
+			#cursor.big { width: 56px; height: 56px; }
+		</style>
 	</body>
 </html>
-
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>

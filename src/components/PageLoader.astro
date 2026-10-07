@@ -1,0 +1,91 @@
+---
+// Full-screen loader shown only when loading is noticeably slow: on first load
+// and while navigating to another page. Pure HTML/CSS plus a tiny inline script,
+// so it works before any framework JavaScript has arrived.
+import LatticeLoader from "@/components/LatticeLoader.astro"
+---
+
+<style is:inline>
+  #page-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: grid;
+    place-items: center;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    animation: page-loader-in 300ms ease 400ms forwards;
+  }
+  @keyframes page-loader-in {
+    to { opacity: 1; pointer-events: auto; }
+  }
+
+  #page-loader.is-done {
+    animation: page-loader-out 450ms ease forwards;
+  }
+  @keyframes page-loader-out {
+    from { opacity: 1; }
+    to { opacity: 0; visibility: hidden; }
+  }
+
+  #page-loader.is-gone {
+    display: none;
+  }
+
+  /* Separate keyframe name so the animation always restarts when navigating. */
+  #page-loader.is-leaving {
+    display: grid;
+    animation: page-loader-in-again 300ms ease 400ms forwards;
+  }
+  @keyframes page-loader-in-again {
+    from { opacity: 0; }
+    to { opacity: 1; pointer-events: auto; }
+  }
+</style>
+
+<div id="page-loader" aria-hidden="true">
+  <LatticeLoader pattern="orbit" grid={3} color="#ffffff" cellSize={9} gap={4} glow glowColor="rgba(255,255,255,0.5)" />
+</div>
+<noscript><style>#page-loader { display: none !important; }</style></noscript>
+
+<script is:inline>
+  (() => {
+    const el = document.getElementById("page-loader")
+    if (!el) return
+    const DELAY = 400 // ms of loading before the loader is allowed to appear
+
+    // Fade out if it became visible; otherwise drop it instantly (no flash).
+    const hide = () => {
+      el.classList.remove("is-leaving")
+      if (parseFloat(getComputedStyle(el).opacity) > 0.01) el.classList.add("is-done")
+      else el.classList.add("is-gone")
+    }
+
+    const fonts = document.fonts ? document.fonts.ready : Promise.resolve()
+    const loaded = new Promise((r) => (document.readyState === "complete" ? r() : addEventListener("load", r, { once: true })))
+    Promise.all([loaded, fonts]).then(hide)
+    setTimeout(hide, 15000) // never trap the page behind the loader
+
+    // Navigating to another page: show the loader (after the same delay) while the next document loads.
+    document.addEventListener("click", (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+      const a = e.target.closest && e.target.closest("a[href]")
+      if (!a || a.target === "_blank" || a.hasAttribute("download")) return
+      const url = new URL(a.href, location.href)
+      if (url.origin !== location.origin) return
+      if (url.pathname === location.pathname && url.search === location.search) return // in-page anchor
+      el.classList.remove("is-done", "is-gone")
+      el.classList.add("is-leaving")
+    })
+
+    // Back/forward cache restores the old page as-is; clear the leaving state.
+    addEventListener("pageshow", (e) => {
+      if (e.persisted) {
+        el.classList.remove("is-leaving", "is-done")
+        el.classList.add("is-gone")
+      }
+    })
+  })()
+</script>
+
